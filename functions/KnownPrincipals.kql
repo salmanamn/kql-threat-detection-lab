@@ -1,8 +1,13 @@
 // Principals whose activity is expected (object IDs, as in AzureActivity.Caller / StorageBlobLogs.RequesterObjectId).
-// Role: ci = GitHub Actions identities (Project 1 D15); platform = Azure first-party services.
-// Humans are deliberately never listed: hand changes must alert.
+// Role: ci       = GitHub Actions identities (Project 1 D15)
+//       platform = Azure first-party services seen in the real logs
+//       operator = human running the by-hand roots (bootstrap/, platform/). Honoured ONLY by state-access
+//                  detections (SLZ-006). RBAC, key, policy and logging detections always fire on humans.
 datatable(PrincipalId:string, Name:string, Role:string)
 [
     "d39787e4-40ef-45e1-885a-37951a20698b", "id-slz-apply", "ci",
-    "0a639633-b7ca-4ffb-8f74-ce45ef95692c", "id-slz-plan", "ci"
+    "0a639633-b7ca-4ffb-8f74-ce45ef95692c", "id-slz-plan", "ci",
+    "2a7ad1ba-d6cb-4cb1-880a-f78bba762235", "NetworkTrafficAnalyticsService", "platform",
+    "e2429b11-dce3-48a8-b3df-27d5929e4ebc", "Azure Traffic Manager and DNS", "platform",
+    "d22fd9d2-84ae-42f5-8812-bea78456de61", "operator (laptop applies of bootstrap/ and platform/)", "operator"
 ]

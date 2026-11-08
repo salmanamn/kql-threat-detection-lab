@@ -1,0 +1,83 @@
+cases:
+  - name: CI destroy deletes stack vault -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/VAULTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+          }
+
+  - name: human deletes vault -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/VAULTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-x/providers/Microsoft.KeyVault/vaults/kv-slz,
+              },
+          }
+
+  - name: CI purge attempt blocked by purge protection -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/LOCATIONS/DELETEDVAULTS/PURGE/ACTION,
+            ActivityStatusValue: Start,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-3,
+          }
+        - {
+            TimeGenerated: "2026-11-08T12:00:01Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/LOCATIONS/DELETEDVAULTS/PURGE/ACTION,
+            ActivityStatusValue: Failure,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-3,
+          }
+
+  - name: purge Accept + Succeeded -> one alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/LOCATIONS/DELETEDVAULTS/PURGE/ACTION,
+            ActivityStatusValue: Accept,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-4,
+          }
+        - {
+            TimeGenerated: "2026-11-08T13:00:30Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/LOCATIONS/DELETEDVAULTS/PURGE/ACTION,
+            ActivityStatusValue: Succeeded,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-4,
+          }
+
+  - name: human vault delete that only started -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.KEYVAULT/VAULTS/DELETE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+          }

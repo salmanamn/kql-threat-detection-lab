@@ -1,0 +1,48 @@
+id: 4b9a7e02-6d5c-4f18-a3e6-0c2d8b5f1e47
+name: SLZ-007 Logging or alerting removed
+description: |
+  A diagnostic setting, activity-log alert, action group, Log Analytics workspace or flow log was
+  deleted. Fires for any non-CI caller, and for CI too when the target is persistent (rg-slz-platform,
+  rg-slz-bootstrap, NetworkWatcherRG, or subscription scope): CI only ever destroys the ephemeral stack.
+severity: High
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes: [AzureActivity]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [DefenseEvasion]
+relevantTechniques: [T1562, T1562.008]
+query: |
+  let allowedIds = toscalar(KnownPrincipals() | where Role in ("ci", "platform") | summarize make_list(tolower(PrincipalId)));
+  let persistentRgs = dynamic(["rg-slz-platform", "rg-slz-bootstrap", "networkwatcherrg"]);
+  AzureActivity
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue in~ (
+      "MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE",
+      "MICROSOFT.INSIGHTS/ACTIVITYLOGALERTS/DELETE",
+      "MICROSOFT.INSIGHTS/ACTIONGROUPS/DELETE",
+      "MICROSOFT.OPERATIONALINSIGHTS/WORKSPACES/DELETE",
+      "MICROSOFT.NETWORK/NETWORKWATCHERS/FLOWLOGS/DELETE")
+  | where ActivityStatusValue in~ ("Success", "Succeeded")
+  | extend Scope = tostring(Authorization_d.scope)
+  | extend TargetRg = tolower(extract(@"(?i)/resourcegroups/([^/]+)", 1, Scope))
+  | extend PersistentTarget = isempty(TargetRg) or TargetRg in (persistentRgs)
+  | where PersistentTarget or not(set_has_element(allowedIds, tolower(Caller)))
+  | project TimeGenerated, Caller, CallerIpAddress, OperationNameValue, Scope, PersistentTarget, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: Scope
+version: 1.0.0

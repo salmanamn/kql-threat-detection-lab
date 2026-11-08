@@ -1,0 +1,58 @@
+id: 7a2d9f60-3e1b-4c85-b7f4-8e0c5a1d6b29
+name: SLZ-004 NSG rule allows inbound traffic from the Internet
+description: |
+  A network security group or security rule write, which succeeded, contains an Allow/Inbound rule
+  whose source is *, Internet, Any, 0.0.0.0/0 or ::/0. Nobody is allowlisted, CI included: an
+  Internet-open rule is wrong whoever deploys it (e.g. a malicious PR). Rule contents come from
+  Properties_d.requestbody on the Start event, joined to the Success event by CorrelationId.
+severity: High
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes: [AzureActivity]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [DefenseEvasion, InitialAccess]
+relevantTechniques: [T1562, T1562.007]
+query: |
+  let openSources = dynamic(["*", "internet", "any", "0.0.0.0/0", "0.0.0.0", "::/0"]);
+  let nsgOps = dynamic(["MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE", "MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE"]);
+  let succeeded = AzureActivity
+      | where OperationNameValue in~ (nsgOps) and ActivityStatusValue in~ ("Success", "Succeeded")
+      | distinct CorrelationId;
+  AzureActivity
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue in~ (nsgOps)
+  | where ActivityStatusValue in~ ("Start", "Started")
+  | where CorrelationId in (succeeded)
+  | extend Scope = tostring(Authorization_d.scope)
+  | extend body = todynamic(tostring(Properties_d.requestbody))
+  | extend rules = iff(OperationNameValue endswith "/SECURITYRULES/WRITE",
+        pack_array(bag_pack("name", tostring(split(Scope, "/")[-1]), "properties", body.properties)),
+        body.properties.securityRules)
+  | mv-expand rule = rules
+  | extend p = rule.properties
+  | where tostring(p.access) =~ "Allow" and tostring(p.direction) =~ "Inbound"
+  | extend prefixes = array_concat(pack_array(tostring(p.sourceAddressPrefix)),
+        iff(isnull(p.sourceAddressPrefixes), dynamic([]), p.sourceAddressPrefixes))
+  | mv-expand src = prefixes to typeof(string)
+  | where tolower(src) in (openSources)
+  | summarize OpenSources = make_set(src),
+        Ports = make_set(coalesce(tostring(p.destinationPortRange), strcat_array(p.destinationPortRanges, ",")))
+      by TimeGenerated, Caller, CallerIpAddress, Scope, RuleName = tostring(rule.name), CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: Scope
+version: 1.0.0

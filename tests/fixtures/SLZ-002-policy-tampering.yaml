@@ -1,0 +1,74 @@
+cases:
+  - name: human deletes policy assignment -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYASSIGNMENTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-stack/providers/Microsoft.Authorization/policyAssignments/slz-guardrails,
+              },
+          }
+
+  - name: CI destroy deletes stack assignment -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYASSIGNMENTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+          }
+
+  - name: CI creates a policy exemption -> alert (exemptions are never expected)
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYEXEMPTIONS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+          }
+
+  - name: human deletes initiative (async, Succeeded) -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYSETDEFINITIONS/DELETE,
+            ActivityStatusValue: Accept,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+          }
+        - {
+            TimeGenerated: "2026-11-08T13:00:05Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYSETDEFINITIONS/DELETE,
+            ActivityStatusValue: Succeeded,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+          }
+
+  - name: failed delete -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/POLICYASSIGNMENTS/DELETE,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+          }

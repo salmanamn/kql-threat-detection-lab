@@ -1,0 +1,97 @@
+cases:
+  - name: Shared Key read of state -> alert
+    expect: 1
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: AccountKey,
+            OperationName: GetBlob,
+            StatusText: KeyBasedAuthenticationNotPermitted,
+            CallerIpAddress: "203.0.113.10:51000",
+          }
+
+  - name: SAS write attempt -> alert
+    expect: 1
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: SAS,
+            OperationName: PutBlob,
+            StatusText: AuthorizationFailure,
+            CallerIpAddress: "203.0.113.10:51001",
+          }
+
+  - name: OAuth read by unknown principal -> alert
+    expect: 1
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: OAuth,
+            OperationName: GetBlob,
+            StatusText: Success,
+            RequesterObjectId: 99999999-9999-9999-9999-999999999999,
+            CallerIpAddress: "198.51.100.7:443",
+          }
+
+  - name: OAuth by id-slz-apply and id-slz-plan -> no alert
+    expect: 0
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: OAuth,
+            OperationName: PutBlob,
+            StatusText: Success,
+            RequesterObjectId: d39787e4-40ef-45e1-885a-37951a20698b,
+          }
+        - {
+            TimeGenerated: "2026-11-08T13:00:01Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: OAuth,
+            OperationName: GetBlob,
+            StatusText: Success,
+            RequesterObjectId: 0A639633-B7CA-4FFB-8F74-CE45EF95692C,
+          }
+
+  - name: trusted service reads container metadata -> no alert
+    expect: 0
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: TrustedAccess,
+            OperationName: GetContainerProperties,
+            StatusText: Success,
+          }
+
+  - name: trusted service reads a blob -> alert
+    expect: 1
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T15:00:00Z",
+            AccountName: stslztfstatet8trox,
+            AuthenticationType: TrustedAccess,
+            OperationName: GetBlob,
+            StatusText: Success,
+          }
+
+  - name: Shared Key on a different account -> no alert
+    expect: 0
+    rows:
+      StorageBlobLogs:
+        - {
+            TimeGenerated: "2026-11-08T16:00:00Z",
+            AccountName: stsomethingelse,
+            AuthenticationType: AccountKey,
+            OperationName: GetBlob,
+            StatusText: Success,
+          }

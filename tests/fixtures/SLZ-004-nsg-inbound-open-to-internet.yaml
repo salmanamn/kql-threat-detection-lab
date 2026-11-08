@@ -1,0 +1,194 @@
+cases:
+  - name: security rule allows SSH from * -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-x/providers/Microsoft.Network/networkSecurityGroups/nsg-pe/securityRules/allow-ssh,
+              },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Allow","direction":"Inbound","protocol":"Tcp","sourceAddressPrefix":"*","destinationPortRange":"22","priority":100}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T10:00:03Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+          }
+
+  - name: NSG write with Internet RDP rule + VNet rule -> one alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-2,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-x/providers/Microsoft.Network/networkSecurityGroups/nsg-pe,
+              },
+            Properties_d:
+              {
+                requestbody: '{"location":"uaenorth","properties":{"securityRules":[{"name":"rdp","properties":{"access":"Allow","direction":"Inbound","sourceAddressPrefix":"Internet","destinationPortRange":"3389"}},{"name":"vnet","properties":{"access":"Allow","direction":"Inbound","sourceAddressPrefix":"VirtualNetwork","destinationPortRange":"443"}}]}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T11:00:04Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-2,
+          }
+
+  - name: 0.0.0.0/0 hidden in sourceAddressPrefixes -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-3,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-x/providers/Microsoft.Network/networkSecurityGroups/nsg-pe/securityRules/web,
+              },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Allow","direction":"Inbound","sourceAddressPrefix":"","sourceAddressPrefixes":["10.0.0.0/8","0.0.0.0/0"],"destinationPortRanges":["80","443"]}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T12:00:03Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-3,
+          }
+
+  - name: CI identity opens * -> alert (CI is not exempt)
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-4,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-x/providers/Microsoft.Network/networkSecurityGroups/nsg-pe/securityRules/oops,
+              },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Allow","direction":"Inbound","sourceAddressPrefix":"*","destinationPortRange":"*"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T13:00:03Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-4,
+          }
+
+  - name: Deny from * -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-5,
+            Authorization_d: { scope: /x/securityRules/deny-all },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Deny","direction":"Inbound","sourceAddressPrefix":"*","destinationPortRange":"*"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T14:00:03Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-5,
+          }
+
+  - name: open rule that never succeeded (e.g. policy deny) -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T15:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-6,
+            Authorization_d: { scope: /x/securityRules/ssh },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Allow","direction":"Inbound","sourceAddressPrefix":"*","destinationPortRange":"22"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T15:00:01Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-6,
+          }
+
+  - name: outbound allow to * -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T16:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-7,
+            Authorization_d: { scope: /x/securityRules/egress },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"access":"Allow","direction":"Outbound","sourceAddressPrefix":"*","destinationPortRange":"443"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T16:00:03Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/SECURITYRULES/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-7,
+          }

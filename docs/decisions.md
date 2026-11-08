@@ -46,3 +46,20 @@ at least one positive and one negative case; fixture columns are validated again
 `--real` runs the same detections against exported workspace data.
 Finding: azurerm refreshes call `listKeys` / `sharedKeys` even on Entra-only resources, so SLZ-003
 allowlists CI and fires on hand applies of `platform/` and `bootstrap/` (true positive, by design).
+
+
+## D8 — Allowlist roles and per-detection scope
+`KnownPrincipals()` roles: `ci` (id-slz-apply/plan), `platform` (NetworkTrafficAnalyticsService,
+Azure Traffic Manager and DNS, both seen in real AzureActivity), `operator` (the human running the
+by-hand roots). `operator` is honoured only by SLZ-006 (state access is routine for hand applies);
+RBAC, keys, policy and logging detections always fire on humans. CI is deliberately *not* exempt
+from SLZ-004 (Internet-open NSG), from policy exemptions (SLZ-002), from purge attempts (SLZ-005), or
+from logging deletes on persistent targets (SLZ-007): CI only legitimately destroys the ephemeral stack.
+Status semantics: `Start` carries request bodies, `Accept` = async 202, final = `Success`/`Succeeded`.
+Lead (to verify in M4): NetworkTrafficAnalyticsService calls ListServiceSas on the flow-log account,
+which has Shared Key off, so Traffic Analytics may be unable to read flow logs (Project 1 D19).
+
+## D9 — CI
+`detections.yml` runs the repo's `docker-compose.yml` (single digest pin), lint + all fixture tests,
+then a "tests must be able to fail" step with a corrupted allowlist (same idea as Project 1's
+weak-must-fail). Branch protection requires the `detections` check (strict).

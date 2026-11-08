@@ -1,0 +1,45 @@
+id: 5c8e2a41-7d3f-4b96-a0e5-1f6b9c4d2a73
+name: SLZ-002 Azure Policy assignment, definition or initiative removed, or exemption created
+description: |
+  Guardrails in this landing zone are Azure Policy (Deny). Deleting an assignment, definition or
+  initiative outside CI, or creating a policy exemption by anyone (CI never creates exemptions),
+  removes a preventive control.
+severity: High
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes: [AzureActivity]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [DefenseEvasion]
+relevantTechniques: [T1562]
+query: |
+  let allowedIds = toscalar(KnownPrincipals() | where Role in ("ci", "platform") | summarize make_list(tolower(PrincipalId)));
+  AzureActivity
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue in~ (
+      "MICROSOFT.AUTHORIZATION/POLICYASSIGNMENTS/DELETE",
+      "MICROSOFT.AUTHORIZATION/POLICYDEFINITIONS/DELETE",
+      "MICROSOFT.AUTHORIZATION/POLICYSETDEFINITIONS/DELETE",
+      "MICROSOFT.AUTHORIZATION/POLICYEXEMPTIONS/WRITE")
+  | where ActivityStatusValue in~ ("Success", "Succeeded")
+  | extend IsExemption = OperationNameValue endswith "/POLICYEXEMPTIONS/WRITE"
+  | where IsExemption or not(set_has_element(allowedIds, tolower(Caller)))
+  | extend Scope = tostring(Authorization_d.scope)
+  | project TimeGenerated, Caller, CallerIpAddress, OperationNameValue, IsExemption, Scope, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: Scope
+version: 1.0.0

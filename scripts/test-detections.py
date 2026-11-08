@@ -76,18 +76,48 @@ def load_functions(db):
         kusto(db, f".create-or-alter function {f.stem}() {{\n{f.read_text().strip()}\n}}")
 
 
+SEVERITIES = {"Informational", "Low", "Medium", "High"}
+TACTICS = {
+    "Reconnaissance", "ResourceDevelopment", "InitialAccess", "Execution", "Persistence",
+    "PrivilegeEscalation", "DefenseEvasion", "CredentialAccess", "Discovery", "LateralMovement",
+    "Collection", "Exfiltration", "CommandAndControl", "Impact",
+}
+TECH_RE = re.compile(r"^T\d{4}(\.\d{3})?$")
+GUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+REQUIRED = ("id", "name", "description", "severity", "queryFrequency", "queryPeriod",
+            "tactics", "relevantTechniques", "query")
+
+
 def load_detections(k):
-    out = []
+    out, seen, errors = [], {}, []
     for f in sorted((ROOT / "detections").glob("*.yaml")):
+        d = yaml.safe_load(f.read_text())
+        missing = [key for key in REQUIRED if key not in d]
+        if missing:
+            errors.append(f"{f.name}: missing {missing}")
+            continue
+        rid, prefix = str(d["id"]), f.stem[:7]
+        if not GUID_RE.match(rid):
+            errors.append(f"{f.name}: id must be a lower-case GUID")
+        if rid in seen:
+            errors.append(f"{f.name}: duplicate id (also in {seen[rid]})")
+        seen[rid] = f.name
+        if not str(d["name"]).startswith(prefix):
+            errors.append(f"{f.name}: name must start with {prefix}")
+        if d["severity"] not in SEVERITIES:
+            errors.append(f"{f.name}: severity {d['severity']!r} not in {sorted(SEVERITIES)}")
+        bad = [t for t in d["tactics"] if t not in TACTICS]
+        if bad:
+            errors.append(f"{f.name}: unknown tactics {bad}")
+        bad = [t for t in d["relevantTechniques"] if not TECH_RE.match(str(t))]
+        if bad:
+            errors.append(f"{f.name}: bad technique ids {bad}")
         if k and k not in f.stem:
             continue
-        d = yaml.safe_load(f.read_text())
-        missing = [key for key in ("id", "name", "query") if key not in d]
-        if missing:
-            raise SystemExit(f"{f.name}: missing {missing}")
         out.append((f, d))
+    if errors:
+        raise SystemExit("detection lint failed:\n  " + "\n  ".join(errors))
     return out
-
 
 def cell(v):
     if v is None:

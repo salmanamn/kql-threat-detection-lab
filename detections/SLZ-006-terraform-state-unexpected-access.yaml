@@ -1,0 +1,42 @@
+id: 8d1f5b37-2a6c-4e09-9b84-3c7e0a2f5d61
+name: SLZ-006 Terraform state accessed by unexpected principal or non-Entra auth
+description: |
+  The Terraform state account (stslztfstate*) holds every secret Terraform knows. It is Entra-only:
+  any Shared Key, SAS or anonymous request is an attack signal even if it fails. OAuth access is
+  expected only from CI identities and the operator; trusted Azure services may read metadata only.
+severity: High
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureStorageAccount
+    dataTypes: [StorageBlobLogs]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [Collection, CredentialAccess]
+relevantTechniques: [T1530, T1552, T1552.001]
+query: |
+  let allowedIds = toscalar(KnownPrincipals() | where Role in ("ci", "operator") | summarize make_list(tolower(PrincipalId)));
+  let trustedMetadataOps = dynamic(["GetBlobServiceProperties", "GetContainerProperties", "GetContainerServiceMetadata"]);
+  StorageBlobLogs
+  | where AccountName startswith "stslztfstate"
+  | extend Reason = case(
+      AuthenticationType !in ("OAuth", "TrustedAccess"), strcat("non-Entra auth: ", AuthenticationType),
+      AuthenticationType == "TrustedAccess" and OperationName !in (trustedMetadataOps), "trusted service touched blob data",
+      AuthenticationType == "OAuth" and not(set_has_element(allowedIds, tolower(RequesterObjectId))), "unexpected principal",
+      "")
+  | where isnotempty(Reason)
+  | extend CallerIp = tostring(split(CallerIpAddress, ":")[0])
+  | summarize Count = count(), Operations = make_set(OperationName), Statuses = make_set(StatusText),
+        FirstSeen = min(TimeGenerated), LastSeen = max(TimeGenerated)
+      by AccountName, Reason, AuthenticationType, RequesterObjectId, RequesterUpn, CallerIp
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: AadUserId
+        columnName: RequesterObjectId
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIp
+version: 1.0.0

@@ -1,0 +1,92 @@
+cases:
+  - name: human deletes stack diagnostic setting -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-stack/providers/Microsoft.KeyVault/vaults/kv/providers/Microsoft.Insights/diagnosticSettings/diag,
+              },
+          }
+
+  - name: CI destroy deletes stack diagnostic setting -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-stack/providers/Microsoft.KeyVault/vaults/kv/providers/Microsoft.Insights/diagnosticSettings/diag,
+              },
+          }
+
+  - name: CI deletes a platform activity-log alert -> alert (persistent target)
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.INSIGHTS/ACTIVITYLOGALERTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/RG-SLZ-PLATFORM/providers/Microsoft.Insights/activityLogAlerts/ala-nsg-delete,
+              },
+          }
+
+  - name: CI deletes subscription activity-log export -> alert (subscription scope)
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/providers/Microsoft.Insights/diagnosticSettings/activity-to-law,
+              },
+          }
+
+  - name: human deletes platform workspace -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.OPERATIONALINSIGHTS/WORKSPACES/DELETE,
+            ActivityStatusValue: Succeeded,
+            Caller: attacker@contoso.example,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-platform/providers/Microsoft.OperationalInsights/workspaces/log-slz-platform,
+              },
+          }
+
+  - name: failed delete -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T15:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.INSIGHTS/DIAGNOSTICSETTINGS/DELETE,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+          }
