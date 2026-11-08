@@ -190,7 +190,7 @@ def run_real(dets):
     for _, d in dets:
         cols, rows = kusto(REAL_DB, d["query"])
         print(f"{d['name']}: {len(rows)} hit(s)")
-        for r in rows[:5]:
+        for r in rows:
             print("    " + " | ".join(f"{c}={v}" for c, v in zip(cols, r) if v not in (None, "", [])))
     return 0
 

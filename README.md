@@ -24,4 +24,4 @@ Microsoft Sentinel analytics rules.
     docker compose down
 
 Design decisions: [docs/decisions.md](docs/decisions.md).
-Status: M3 (detections + CI) done. Next: M4 real signal in Azure, M5 Sentinel.
+Status: M4 done: 6/7 detections fired on real Azure logs; SLZ-006 non-Entra branch is blind to rejected Shared Key requests (storage logging gap, D10). [Evidence](docs/evidence/m4-real-run.txt). Next: M5 Sentinel.
