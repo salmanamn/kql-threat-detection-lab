@@ -1,0 +1,101 @@
+cases:
+  - name: human lists storage keys -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - TimeGenerated: "2026-11-08T10:00:00Z"
+          CategoryValue: Administrative
+          OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION
+          ActivityStatusValue: Success
+          Caller: attacker@contoso.example
+          CallerIpAddress: 203.0.113.10
+          Authorization_d:
+            {
+              scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-slz-bootstrap/providers/Microsoft.Storage/storageAccounts/stslztfstatet8trox,
+            }
+
+  - name: same human, same workspace, 3 shared-key reads -> one aggregated alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.OPERATIONALINSIGHTS/WORKSPACES/SHAREDKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-platform/providers/Microsoft.OperationalInsights/workspaces/log-slz-platform,
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T10:05:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.OPERATIONALINSIGHTS/WORKSPACES/SHAREDKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-platform/providers/Microsoft.OperationalInsights/workspaces/log-slz-platform,
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T10:10:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.OPERATIONALINSIGHTS/WORKSPACES/SHAREDKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-platform/providers/Microsoft.OperationalInsights/workspaces/log-slz-platform,
+              },
+          }
+
+  - name: human lists keys on two accounts -> two alerts
+    expect: 2
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            Authorization_d: { scope: /x/storageAccounts/a },
+          }
+        - {
+            TimeGenerated: "2026-11-08T11:01:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTSERVICESAS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            Authorization_d: { scope: /x/storageAccounts/b },
+          }
+
+  - name: CI apply identity refresh -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+          }
+
+  - name: failed key listing -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+          }

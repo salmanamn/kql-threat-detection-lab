@@ -1,0 +1,40 @@
+id: 3b1f6c2e-8a4d-4e71-9c0b-5d2e7f1a9b31
+name: SLZ-001 Role assignment changed outside CI
+description: |
+  An RBAC role assignment was created or deleted by a principal that is not a known CI identity.
+  In this landing zone all RBAC is Terraform-managed through GitHub Actions (id-slz-apply); a
+  human or unknown principal changing RBAC is either an emergency change or persistence.
+severity: Medium
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes: [AzureActivity]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [Persistence, PrivilegeEscalation]
+relevantTechniques: [T1098, T1098.003]
+query: |
+  let allowed = KnownPrincipals() | where Role in ("ci", "platform") | project PrincipalId = tolower(PrincipalId);
+  AzureActivity
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue in~ ("MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE", "MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/DELETE")
+  | where ActivityStatusValue in~ ("Success", "Succeeded")
+  | where tolower(Caller) !in (allowed)
+  | extend Scope = tostring(Authorization_d.scope)
+  | project TimeGenerated, Caller, CallerIpAddress, OperationNameValue, Scope, ResourceGroup, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: Scope
+version: 1.0.0

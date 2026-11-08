@@ -29,3 +29,20 @@ masked, case-insensitive). CSV is ingested by column position, so no ingestion m
 Hidden columns (`_ResourceId`, `_SubscriptionId`, `_BilledSize`, ...) are not returned by a plain
 query and are therefore not in the local schema; detections must not depend on them.
 `NTANetAnalytics` is schema-only until a VM exists (Project 1 D19).
+
+## D6 — Detection format: Sentinel analytics-rule YAML
+One `detections/<SLZ-id>-<slug>.yaml` per rule (id GUID, severity, frequency/period, tactics,
+techniques incl. sub-techniques, entity mappings, query). Terraform consumes it via `yamldecode()`
+in M5. Queries carry **no** `TimeGenerated` filter; the rule's `queryPeriod` applies it in Sentinel.
+Allowlists live in the `KnownPrincipals()` function (`functions/*.kql`): a stored function locally,
+a Log Analytics saved function in M5, so the query text is identical everywhere (D4).
+Only CI identities (`ci`) and Azure first-party services (`platform`) are allowlisted, never humans.
+
+## D7 — Test discipline
+`scripts/test-detections.py` (uv inline deps) loads fixtures into `SecLabTest` (dropped/recreated
+per case, so it never touches the real data in `SecLab`). Each detection must have a fixture with
+at least one positive and one negative case; fixture columns are validated against
+`schemas/*.kql`, so typos fail loudly. Status filters accept both `Success` and `Succeeded`.
+`--real` runs the same detections against exported workspace data.
+Finding: azurerm refreshes call `listKeys` / `sharedKeys` even on Entra-only resources, so SLZ-003
+allowlists CI and fires on hand applies of `platform/` and `bootstrap/` (true positive, by design).

@@ -1,0 +1,8 @@
+// Principals whose activity is expected (object IDs, as in AzureActivity.Caller / StorageBlobLogs.RequesterObjectId).
+// Role: ci = GitHub Actions identities (Project 1 D15); platform = Azure first-party services.
+// Humans are deliberately never listed: hand changes must alert.
+datatable(PrincipalId:string, Name:string, Role:string)
+[
+    "d39787e4-40ef-45e1-885a-37951a20698b", "id-slz-apply", "ci",
+    "0a639633-b7ca-4ffb-8f74-ce45ef95692c", "id-slz-plan", "ci"
+]

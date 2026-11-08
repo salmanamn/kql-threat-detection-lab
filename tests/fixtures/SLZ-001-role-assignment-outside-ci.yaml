@@ -1,0 +1,86 @@
+cases:
+  - name: human creates role assignment -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - TimeGenerated: "2026-11-08T10:00:00Z"
+          CategoryValue: Administrative
+          OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE
+          ActivityStatusValue: Success
+          Caller: attacker@contoso.example
+          CallerIpAddress: 203.0.113.10
+          ResourceGroup: rg-slz-platform
+          CorrelationId: 11111111-0000-0000-0000-000000000001
+          Authorization_d:
+            {
+              scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-slz-platform/providers/Microsoft.Authorization/roleAssignments/aaaa,
+            }
+
+  - name: Start + Success of one change -> one alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-2,
+          }
+        - {
+            TimeGenerated: "2026-11-08T10:00:02Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-2,
+          }
+
+  - name: unknown service principal deletes role assignment -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/DELETE,
+            ActivityStatusValue: Succeeded,
+            Caller: 99999999-9999-9999-9999-999999999999,
+          }
+
+  - name: CI apply identity (upper-case GUID) -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: D39787E4-40EF-45E1-885A-37951A20698B,
+          }
+
+  - name: failed attempt -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/WRITE,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+          }
+
+  - name: unrelated write -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.NETWORK/NETWORKSECURITYGROUPS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+          }
