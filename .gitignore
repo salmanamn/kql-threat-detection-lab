@@ -1,0 +1,9 @@
+# Emulator volume + exported real logs (never committed)
+data/
+
+# Terraform (M5)
+.terraform/
+*.tfstate*
+*.tfplan
+*.tfvars
+!*.tfvars.example

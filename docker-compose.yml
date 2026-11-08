@@ -1,0 +1,12 @@
+services:
+  kusto:
+    image: mcr.microsoft.com/azuredataexplorer/kustainer-linux@sha256:e76f3a9b5ff0c71e9bd4e23617163b478cb70c23b434cc4683f067831b064a1c
+    container_name: kusto
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/kusto:/kustodata
+    environment:
+      ACCEPT_EULA: "Y"
+    mem_limit: 4g
