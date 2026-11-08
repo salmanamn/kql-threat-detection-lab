@@ -1,0 +1,158 @@
+cases:
+  - name: human re-enables Shared Key -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T10:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+            Authorization_d:
+              {
+                scope: /subscriptions/0/resourceGroups/rg-slz-bootstrap/providers/Microsoft.Storage/storageAccounts/stslztfstatet8trox,
+              },
+            Properties_d:
+              { requestbody: '{"properties":{"allowSharedKeyAccess":true}}' },
+          }
+        - {
+            TimeGenerated: "2026-11-08T10:00:02Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-1,
+          }
+
+  - name: CI hardened apply -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T11:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-2,
+            Authorization_d: { scope: /x/storageAccounts/stslzazurea },
+            Properties_d:
+              {
+                requestbody: '{"kind":"StorageV2","properties":{"allowSharedKeyAccess":false,"allowBlobPublicAccess":false,"minimumTlsVersion":"TLS1_2"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T11:00:20Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Succeeded,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-2,
+          }
+
+  - name: CI weak apply (hardened=false) -> alert (CI is not exempt)
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T12:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-3,
+            Authorization_d: { scope: /x/storageAccounts/stslzazurea },
+            Properties_d:
+              {
+                requestbody: '{"properties":{"allowSharedKeyAccess":true,"allowBlobPublicAccess":true,"minimumTlsVersion":"TLS1_2"}}',
+              },
+          }
+        - {
+            TimeGenerated: "2026-11-08T12:00:20Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Accept,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-3,
+          }
+        - {
+            TimeGenerated: "2026-11-08T12:00:40Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Succeeded,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            CorrelationId: c-3,
+          }
+
+  - name: Shared Key enable denied by Azure Policy -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T13:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-4,
+            Authorization_d: { scope: /x/storageAccounts/stslzazurea },
+            Properties_d:
+              { requestbody: '{"properties":{"allowSharedKeyAccess":true}}' },
+          }
+        - {
+            TimeGenerated: "2026-11-08T13:00:01Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-4,
+          }
+
+  - name: minimum TLS lowered to 1.0 -> alert
+    expect: 1
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T14:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-5,
+            Authorization_d: { scope: /x/storageAccounts/stslzflowcf2c9f36 },
+            Properties_d:
+              { requestbody: '{"properties":{"minimumTlsVersion":"TLS1_0"}}' },
+          }
+        - {
+            TimeGenerated: "2026-11-08T14:00:02Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-5,
+          }
+
+  - name: tags-only update -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-08T15:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Start,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-6,
+            Authorization_d: { scope: /x/storageAccounts/stslzazurea },
+            Properties_d: { requestbody: '{"tags":{"owner":"lab"}}' },
+          }
+        - {
+            TimeGenerated: "2026-11-08T15:00:02Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CorrelationId: c-6,
+          }

@@ -1,0 +1,52 @@
+id: 6f3c1a95-4e2b-4d07-8a61-b9d0e5c27f18
+name: SLZ-008 Storage account weakened (Shared Key, public blob access, legacy TLS)
+description: |
+  A storage account write that succeeded enables Shared Key authorization, enables anonymous blob
+  access, or lowers minimum TLS below 1.2. Nobody is allowlisted, CI included. This covers the
+  D10 gap: rejected Shared Key requests are not logged, so the useful signal is Shared Key being
+  turned back on. Settings come from Properties_d.requestbody on the Start event, joined to the
+  Success event by CorrelationId. Writes denied by Azure Policy never succeed and do not alert.
+severity: High
+kind: Scheduled
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes: [AzureActivity]
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics: [DefenseEvasion]
+relevantTechniques: [T1562]
+query: |
+  let storageOps = dynamic(["MICROSOFT.STORAGE/STORAGEACCOUNTS/WRITE"]);
+  let succeeded = AzureActivity
+      | where OperationNameValue in~ (storageOps) and ActivityStatusValue in~ ("Success", "Succeeded")
+      | distinct CorrelationId;
+  AzureActivity
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue in~ (storageOps)
+  | where ActivityStatusValue in~ ("Start", "Started")
+  | where CorrelationId in (succeeded)
+  | extend Scope = tostring(Authorization_d.scope)
+  | extend p = todynamic(tostring(Properties_d.requestbody)).properties
+  | extend SharedKey = tostring(p.allowSharedKeyAccess), BlobPublic = tostring(p.allowBlobPublicAccess), MinTls = tostring(p.minimumTlsVersion)
+  | extend Weakened = array_concat(
+        iff(SharedKey =~ "true", dynamic(["allowSharedKeyAccess=true"]), dynamic([])),
+        iff(BlobPublic =~ "true", dynamic(["allowBlobPublicAccess=true"]), dynamic([])),
+        iff(MinTls in~ ("TLS1_0", "TLS1_1"), pack_array(strcat("minimumTlsVersion=", MinTls)), dynamic([])))
+  | where array_length(Weakened) > 0
+  | project TimeGenerated, Caller, CallerIpAddress, Scope, Weakened, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: Caller
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: CallerIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: Scope
+version: 1.0.0

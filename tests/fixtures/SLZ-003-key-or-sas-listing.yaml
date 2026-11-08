@@ -1,6 +1,7 @@
 cases:
-  - name: human lists storage keys -> alert
+  - name: human lists keys on Terraform state -> alert, High
     expect: 1
+    expect_values: { AlertSeverity: High }
     rows:
       AzureActivity:
         - TimeGenerated: "2026-11-08T10:00:00Z"
@@ -14,8 +15,9 @@ cases:
               scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-slz-bootstrap/providers/Microsoft.Storage/storageAccounts/stslztfstatet8trox,
             }
 
-  - name: same human, same workspace, 3 shared-key reads -> one aggregated alert
+  - name: same human, same workspace, 3 shared-key reads -> one aggregated alert, Medium
     expect: 1
+    expect_values: { AlertSeverity: Medium }
     rows:
       AzureActivity:
         - {
@@ -55,8 +57,9 @@ cases:
               },
           }
 
-  - name: human lists keys on two accounts -> two alerts
+  - name: human lists keys on two stack accounts -> two alerts, Medium
     expect: 2
+    expect_values: { AlertSeverity: Medium }
     rows:
       AzureActivity:
         - {
@@ -65,7 +68,7 @@ cases:
             OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION,
             ActivityStatusValue: Success,
             Caller: attacker@contoso.example,
-            Authorization_d: { scope: /x/storageAccounts/a },
+            Authorization_d: { scope: /x/storageAccounts/stslzazurea },
           }
         - {
             TimeGenerated: "2026-11-08T11:01:00Z",
@@ -73,7 +76,7 @@ cases:
             OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTSERVICESAS/ACTION,
             ActivityStatusValue: Success,
             Caller: attacker@contoso.example,
-            Authorization_d: { scope: /x/storageAccounts/b },
+            Authorization_d: { scope: /x/storageAccounts/stslzazureb },
           }
 
   - name: CI apply identity refresh -> no alert
