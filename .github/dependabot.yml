@@ -4,3 +4,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+
+  - package-ecosystem: terraform
+    directory: /sentinel
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: hashicorp/azurerm
+        update-types: ["version-update:semver-major"]
