@@ -107,3 +107,12 @@ reads shared keys on refresh and would trigger SLZ-003 on every operator apply. 
 lets the new function index before Sentinel validates the queries. Sentinel free trial (10 GB/day,
 31 days) covers the lab; as the tenant's first Sentinel workspace it is auto-onboarded to the
 Defender portal, where incidents appear. Teardown: destroy `sentinel/` before Project 1 `platform/`.
+
+## D13 — Sentinel validation (M5c)
+Re-ran the D10 simulation with the rules live. Sentinel raised alerts for SLZ-001/002/003/004/005/007;
+SLZ-003 produced Medium and High alerts in one run (per-row `AlertSeverity` via
+`alertDetailsOverride`), and entity mapping yielded account, ip and azure-resource entities.
+SLZ-006 stays silent by design (D10 logging gap); SLZ-008 had nothing to see (all writes hardened).
+Incidents: grouped per rule on all entities within 5 h; the Defender portal correlation engine may
+merge further, so alert counts are the acceptance check. Evidence: `docs/evidence/m5-sentinel-incidents.txt`.
+`scripts/la-query.sh` runs KQL against the real workspace via the query REST API.

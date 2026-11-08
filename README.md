@@ -25,4 +25,7 @@ Microsoft Sentinel analytics rules.
     docker compose down
 
 Design decisions: [docs/decisions.md](docs/decisions.md).
-Status: M4 done: 6/7 detections fired on real Azure logs; SLZ-006 non-Entra branch is blind to rejected Shared Key requests (storage logging gap, D10). [Evidence](docs/evidence/m4-real-run.txt). M5b: 8 rules deployed to Sentinel from `detections/*.yaml` (`sentinel/`). Next: M5c incidents.
+Status: **done.** 8 detections, 47 fixture tests in CI, fired on real Azure logs (M4,
+[evidence](docs/evidence/m4-real-run.txt)) and as live Sentinel alerts/incidents (M5,
+[evidence](docs/evidence/m5-sentinel-incidents.txt)). Known gap: rejected Shared Key requests are
+not logged by storage (D10), covered by SLZ-003 (High on state) and SLZ-008.
