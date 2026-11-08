@@ -1,0 +1,7 @@
+]633;E;echo "# M5c Sentinel alerts (last 4h)";21721c81-97ed-489d-81b7-d414029d1ea0]633;C# M5c Sentinel alerts (last 4h)
+AlertName	Alerts	Severities
+SLZ-001 Role assignment changed outside CI	2	["Medium"]
+
+# M5c Sentinel incidents (last 4h)
+IncidentNumber	Title	Severity	Status	Alerts
+2	SLZ-001 Role assignment changed outside CI	Medium	New	1
