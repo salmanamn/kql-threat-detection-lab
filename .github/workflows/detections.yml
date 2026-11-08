@@ -1,41 +1,48 @@
 name: detections
 
 on:
-    pull_request:
-    push:
-        branches: [main]
+  pull_request:
+  push:
+    branches: [main]
 
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    detections:
-        name: detections
-        runs-on: ubuntu-24.04
-        timeout-minutes: 20
-        steps:
-            - uses: actions/checkout@v7
+  detections:
+    name: detections
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
 
-            - name: Start Kusto emulator (same pinned image as local)
-              run: docker compose up -d
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.17.1
 
-            - name: Install uv
-              run: pipx install uv
+      - name: Sentinel root fmt + validate
+        run: terraform -chdir=sentinel fmt -check && terraform -chdir=sentinel init -backend=false -input=false && terraform -chdir=sentinel validate
 
-            - name: Wait for emulator / create test database
-              run: KUSTO_DB=SecLabTest ./scripts/kusto-init.sh
+      - name: Start Kusto emulator (same pinned image as local)
+        run: docker compose up -d
 
-            - name: Lint + detection tests
-              run: ./scripts/test-detections.py
+      - name: Install uv
+        run: pipx install uv
 
-            - name: Tests must be able to fail (broken allowlist)
-              run: |
-                  sed -i 's/d39787e4/x39787e4/' functions/KnownPrincipals.kql
-                  if ./scripts/test-detections.py > broken.txt; then
-                    echo "::error::tests still pass with a broken allowlist"; cat broken.txt; exit 1
-                  fi
-                  grep -E '^[0-9]+ passed, [1-9][0-9]* failed' broken.txt
+      - name: Wait for emulator / create test database
+        run: KUSTO_DB=SecLabTest ./scripts/kusto-init.sh
 
-            - name: Emulator logs
-              if: failure()
-              run: docker compose logs --tail 200 kusto
+      - name: Lint + detection tests
+        run: ./scripts/test-detections.py
+
+      - name: Tests must be able to fail (broken allowlist)
+        run: |
+          sed -i 's/d39787e4/x39787e4/' functions/KnownPrincipals.kql
+          if ./scripts/test-detections.py > broken.txt; then
+            echo "::error::tests still pass with a broken allowlist"; cat broken.txt; exit 1
+          fi
+          grep -E '^[0-9]+ passed, [1-9][0-9]* failed' broken.txt
+
+      - name: Emulator logs
+        if: failure()
+        run: docker compose logs --tail 200 kusto

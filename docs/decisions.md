@@ -94,3 +94,16 @@ weak stack demo (`hardened=false`) through CI is a true positive. Policy-denied 
 and do not alert. SLZ-003 emits `AlertSeverity` (High for `stslztfstate*` targets) and maps it with
 `alertDetailsOverride.alertSeverityColumnName`; fixtures assert it with `expect_values`, and the lint
 checks that the override column is produced by the query.
+
+## D12 — Sentinel root
+`sentinel/` is a persistent root applied by hand (like Project 1 `platform/`); state in the Project 1
+state account, key `kql-sentinel.tfstate`. It onboards Sentinel on `log-slz-platform`, deploys
+`functions/KnownPrincipals.kql` as a saved function (alias `KnownPrincipals`), and creates one
+scheduled rule per `detections/*.yaml` via `yamldecode()`: GUID `id` as rule name, durations mapped
+to ISO 8601 (unknown values fail the plan), parent techniques in `techniques`, sub-techniques in
+`sub_techniques`, `AlertPerResult` event grouping (needed for SLZ-003 per-row severity), incident
+grouping on all entities within 5 h. The workspace ID is built from names: a workspace data source
+reads shared keys on refresh and would trigger SLZ-003 on every operator apply. A 90 s `time_sleep`
+lets the new function index before Sentinel validates the queries. Sentinel free trial (10 GB/day,
+31 days) covers the lab; as the tenant's first Sentinel workspace it is auto-onboarded to the
+Defender portal, where incidents appear. Teardown: destroy `sentinel/` before Project 1 `platform/`.
