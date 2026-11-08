@@ -7,6 +7,7 @@ services:
       - "8080:8080"
     volumes:
       - ./data/kusto:/kustodata
+      - ./data/import:/import:ro
     environment:
       ACCEPT_EULA: "Y"
     mem_limit: 4g

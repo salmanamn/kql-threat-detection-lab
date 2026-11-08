@@ -20,3 +20,12 @@ No .NET dependency, identical locally and in CI.
 Table and column names/types match the workspace (taken from `getschema` in M2), so a detection's
 KQL text is byte-identical locally, in Log Analytics, and in Sentinel. Only the time window is
 parameterised.
+
+## D5 — Export via Log Analytics query REST, CSV by column position
+`scripts/export-la.sh` calls `POST https://api.loganalytics.io/v1/workspaces/<id>/query` via `az rest`
+(typed columns; `az monitor log-analytics query` returns untyped strings). One call per table gives
+both `schemas/<Table>.kql` (committed) and `data/import/<Table>.csv` (gitignored; subscription id
+masked, case-insensitive). CSV is ingested by column position, so no ingestion mappings.
+Hidden columns (`_ResourceId`, `_SubscriptionId`, `_BilledSize`, ...) are not returned by a plain
+query and are therefore not in the local schema; detections must not depend on them.
+`NTANetAnalytics` is schema-only until a VM exists (Project 1 D19).
