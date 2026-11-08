@@ -63,3 +63,26 @@ which has Shared Key off, so Traffic Analytics may be unable to read flow logs (
 `detections.yml` runs the repo's `docker-compose.yml` (single digest pin), lint + all fixture tests,
 then a "tests must be able to fail" step with a corrupted allowlist (same idea as Project 1's
 weak-must-fail). Branch protection requires the `detections` check (strict).
+
+## D10 — Real-signal simulation and findings (2026-11-08)
+`scripts/simulate.sh run <stack-rg>` performs one action per detection against the ephemeral stack
+during a CI-deployed lab session and cleans up after itself; `purge` attempts a purge of the
+soft-deleted vault after CI destroy; `state` makes a key-signed read of the Terraform state account
+(expected to be refused); `cleanup` recovers from a partial run. Evidence:
+`docs/evidence/m4-real-run.txt` (UPN and IP last octet masked).
+
+Results: SLZ-001/002/003/004/005/007 fired on real logs. SLZ-007 also caught two historical true
+positives (hand deletion of `ala-slz-service-health-incidents` during Project 1 S2-4).
+
+Findings:
+- A purge refused by purge protection (HTTP 405 `MethodNotAllowed`) *is* logged:
+  `ActivityStatusValue=Failure`, scope = subscription.
+- **Logging gap:** storage writes no `StorageBlobLogs` record for requests rejected with
+  `KeyBasedAuthenticationNotPermitted` (verified by request id). SLZ-006's non-Entra branch therefore
+  only fires if Shared Key is re-enabled (successful AccountKey requests are logged). The observable
+  signal for a Shared Key attack on state is the control-plane listKeys on the state account (SLZ-003).
+  Follow-up: detect Shared Key / public access being re-enabled (SLZ-008), and raise SLZ-003
+  severity when the target is the state account (Sentinel dynamic severity, M5).
+- NSG simulation priority must be free: the stack NSG uses 4000 for `deny-internet-inbound`.
+- D19 lead (Traffic Analytics ListServiceSas vs Shared Key off) cannot be checked from the laptop;
+  stays open until a VM exists.
