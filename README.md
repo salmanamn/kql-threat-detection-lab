@@ -14,6 +14,7 @@ Microsoft Sentinel analytics rules.
 | SLZ-005 | Key Vault deleted outside CI, or purge attempted | AzureActivity | T1485 | High |
 | SLZ-006 | Terraform state: unexpected principal or non-Entra auth | StorageBlobLogs | T1530, T1552.001 | High |
 | SLZ-007 | Logging or alerting removed | AzureActivity | T1562.008 | High |
+| SLZ-008 | Storage account weakened (Shared Key, public blob, legacy TLS) | AzureActivity | T1562 | High |
 
 ## Local lab
     docker compose up -d

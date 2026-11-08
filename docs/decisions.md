@@ -86,3 +86,11 @@ Findings:
 - NSG simulation priority must be free: the stack NSG uses 4000 for `deny-internet-inbound`.
 - D19 lead (Traffic Analytics ListServiceSas vs Shared Key off) cannot be checked from the laptop;
   stays open until a VM exists.
+
+## D11 — Closing the D10 gap
+SLZ-008 alerts on a succeeded storage write that enables Shared Key, enables anonymous blob access,
+or lowers TLS below 1.2 (request body on the Start event, joined to Success). No allowlist: the
+weak stack demo (`hardened=false`) through CI is a true positive. Policy-denied writes never succeed
+and do not alert. SLZ-003 emits `AlertSeverity` (High for `stslztfstate*` targets) and maps it with
+`alertDetailsOverride.alertSeverityColumnName`; fixtures assert it with `expect_values`, and the lint
+checks that the override column is produced by the query.

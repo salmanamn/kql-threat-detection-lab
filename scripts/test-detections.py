@@ -112,6 +112,9 @@ def load_detections(k):
         bad = [t for t in d["relevantTechniques"] if not TECH_RE.match(str(t))]
         if bad:
             errors.append(f"{f.name}: bad technique ids {bad}")
+        sev_col = (d.get("alertDetailsOverride") or {}).get("alertSeverityColumnName")
+        if sev_col and sev_col not in d["query"]:
+            errors.append(f"{f.name}: alertSeverityColumnName {sev_col!r} not produced by the query")
         if k and k not in f.stem:
             continue
         out.append((f, d))
@@ -172,13 +175,22 @@ def run_tests(dets, schemas):
                     raise SystemExit(f"{fx.name}: unknown table {t}")
                 kusto(TEST_DB, f".ingest inline into table {t} <|\n" + to_csv(t, schemas[t][1], rows))
             try:
-                got = len(kusto(TEST_DB, d["query"])[1])
+                cols, res = kusto(TEST_DB, d["query"])
             except KustoError as e:
                 print(f"  FAIL  {c['name']}: {e}")
                 failed += 1
                 continue
+            got = len(res)
             ok = got == c["expect"]
-            print(f"  {'PASS' if ok else 'FAIL'}  {c['name']} (expected {c['expect']}, got {got})")
+            detail = f"expected {c['expect']}, got {got}"
+            for col, want in (c.get("expect_values") or {}).items():
+                if col not in cols:
+                    ok, detail = False, f"{detail}; column {col} missing"
+                    continue
+                vals = sorted({str(r[cols.index(col)]) for r in res})
+                if vals != [str(want)]:
+                    ok, detail = False, f"{detail}; {col}={vals}, want {want}"
+            print(f"  {'PASS' if ok else 'FAIL'}  {c['name']} ({detail})")
             passed += ok
             failed += not ok
     print(f"\n{passed} passed, {failed} failed")
