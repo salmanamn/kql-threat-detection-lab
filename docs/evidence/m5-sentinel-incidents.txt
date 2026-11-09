@@ -1,7 +1,20 @@
-]633;E;echo "# M5c Sentinel alerts (last 4h)";21721c81-97ed-489d-81b7-d414029d1ea0]633;C# M5c Sentinel alerts (last 4h)
+]633;E;echo "# M5c Sentinel alerts (since 2026-11-08T21:30Z)";21721c81-97ed-489d-81b7-d414029d1ea0]633;C# M5c Sentinel alerts (since 2026-11-08T21:30Z)
 AlertName	Alerts	Severities
-SLZ-001 Role assignment changed outside CI	2	["Medium"]
+SLZ-001 Role assignment changed outside CI	4	["Medium"]
+SLZ-002 Azure Policy assignment, definition or initiative removed, or exemption created	1	["High"]
+SLZ-003 Storage or workspace keys listed outside CI	3	["Medium","High"]
+SLZ-004 NSG rule allows inbound traffic from the Internet	1	["High"]
+SLZ-005 Key Vault deleted outside CI, or purge attempted	1	["High"]
+SLZ-007 Logging or alerting removed	1	["High"]
 
-# M5c Sentinel incidents (last 4h)
+# M5c Sentinel incidents
 IncidentNumber	Title	Severity	Status	Alerts
 2	SLZ-001 Role assignment changed outside CI	Medium	New	1
+3	SLZ-005 Key Vault deleted outside CI, or purge attempted	High	New	1
+4	SLZ-002 Azure Policy assignment, definition or initiative removed, or exemption created	High	New	1
+5	SLZ-001 Role assignment changed outside CI	Medium	New	2
+6	SLZ-004 NSG rule allows inbound traffic from the Internet	High	New	1
+7	SLZ-003 Storage or workspace keys listed outside CI	Medium	New	1
+8	SLZ-003 Storage or workspace keys listed outside CI	Medium	New	1
+9	SLZ-007 Logging or alerting removed	High	New	1
+10	SLZ-003 Storage or workspace keys listed outside CI	High	New	1
