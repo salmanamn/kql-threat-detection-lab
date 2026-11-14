@@ -128,6 +128,11 @@ keys are High because the function key still authenticates the ingest API. The o
 key for every manual test (`az functionapp keys list`): an expected true positive, like the SLZ-001
 hits on bootstrap applies. Kept apart from SLZ-003 so the storage/state rule and its severity logic
 stay as they are; a storage listing fires SLZ-003 only (fixture).
+First run on real logs (M9): Event Grid's first-party service principal (`Microsoft.EventGrid`,
+object id `fe96f09d-…`, owned by Microsoft's tenant) lists the Function App host keys when it
+creates or validates a subscription to an Azure Function endpoint, and lists an account SAS while
+validating a storage dead-letter destination (SLZ-003). Added to `KnownPrincipals()` as `platform`;
+a fixture case in SLZ-009 and SLZ-003 each keeps it allowlisted.
 **SLZ-010**: federated identity credential written to or deleted from a user-assigned identity. No
 allowlist: only the hand-applied bootstrap root creates them, and a CI identity adding one would be
 a pipeline giving itself (or another repository) a way back in. High on `id-slz-*`, Medium elsewhere.

@@ -9,5 +9,6 @@ datatable(PrincipalId:string, Name:string, Role:string)
     "0a639633-b7ca-4ffb-8f74-ce45ef95692c", "id-slz-plan", "ci",
     "2a7ad1ba-d6cb-4cb1-880a-f78bba762235", "NetworkTrafficAnalyticsService", "platform",
     "e2429b11-dce3-48a8-b3df-27d5929e4ebc", "Azure Traffic Manager and DNS", "platform",
+    "fe96f09d-6938-4bce-a669-c59684a91e0c", "Microsoft.EventGrid", "platform",
     "d22fd9d2-84ae-42f5-8812-bea78456de61", "operator (laptop applies of bootstrap/ and platform/)", "operator"
 ]
