@@ -1,0 +1,139 @@
+cases:
+  - name: human lists Service Bus and Cosmos keys of the triage stack -> two alerts, Medium
+    expect: 2
+    expect_values: { AlertSeverity: Medium }
+    rows:
+      AzureActivity:
+        - TimeGenerated: "2026-11-14T19:00:00Z"
+          CategoryValue: Administrative
+          OperationNameValue: MICROSOFT.SERVICEBUS/NAMESPACES/AUTHORIZATIONRULES/LISTKEYS/ACTION
+          ActivityStatusValue: Success
+          Caller: attacker@contoso.example
+          CallerIpAddress: 203.0.113.10
+          Authorization_d:
+            {
+              scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-triage-azure/providers/Microsoft.ServiceBus/namespaces/sb-triage-azure-abcde/authorizationRules/RootManageSharedAccessKey,
+            }
+        - TimeGenerated: "2026-11-14T19:01:00Z"
+          CategoryValue: Administrative
+          OperationNameValue: MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTKEYS/ACTION
+          ActivityStatusValue: Success
+          Caller: attacker@contoso.example
+          CallerIpAddress: 203.0.113.10
+          Authorization_d:
+            {
+              scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-triage-azure/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-triage-azure-abcde,
+            }
+
+  - name: human lists the Function App host keys -> alert, High
+    expect: 1
+    expect_values: { AlertSeverity: High }
+    rows:
+      AzureActivity:
+        - TimeGenerated: "2026-11-14T19:10:00Z"
+          CategoryValue: Administrative
+          OperationNameValue: MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION
+          ActivityStatusValue: Succeeded
+          Caller: attacker@contoso.example
+          CallerIpAddress: 203.0.113.10
+          Authorization_d:
+            {
+              scope: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-triage-azure/providers/Microsoft.Web/sites/func-triage-azure-abcde/host/default,
+            }
+
+  - name: same human, same Cosmos account, keys + read-only keys + connection strings -> one aggregated alert, Medium
+    expect: 1
+    expect_values: { AlertSeverity: Medium, Count: 3 }
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T19:20:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              { scope: /x/databaseAccounts/cosmos-triage-azure-abcde },
+          }
+        - {
+            TimeGenerated: "2026-11-14T19:21:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/READONLYKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              { scope: /x/databaseAccounts/cosmos-triage-azure-abcde },
+          }
+        - {
+            TimeGenerated: "2026-11-14T19:22:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTCONNECTIONSTRINGS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            CallerIpAddress: 203.0.113.10,
+            Authorization_d:
+              { scope: /x/databaseAccounts/cosmos-triage-azure-abcde },
+          }
+
+  - name: CI plan identity refresh (Cosmos keys, Event Grid topic keys) -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T20:00:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: 0a639633-b7ca-4ffb-8f74-ce45ef95692c,
+            Authorization_d:
+              { scope: /x/databaseAccounts/cosmos-triage-azure-abcde },
+          }
+        - {
+            TimeGenerated: "2026-11-14T20:00:05Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.EVENTGRID/TOPICS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: 0a639633-b7ca-4ffb-8f74-ce45ef95692c,
+            Authorization_d: { scope: /x/topics/evgt-triage-azure-abcde },
+          }
+
+  - name: CI apply identity reads the host keys during a code deploy -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T20:10:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: d39787e4-40ef-45e1-885a-37951a20698b,
+            Authorization_d:
+              { scope: /x/sites/func-triage-azure-abcde/host/default },
+          }
+
+  - name: failed key listing -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T20:20:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.COGNITIVESERVICES/ACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Failure,
+            Caller: attacker@contoso.example,
+          }
+
+  - name: storage key listing belongs to SLZ-003 -> no alert here
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T20:30:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: attacker@contoso.example,
+            Authorization_d: { scope: /x/storageAccounts/sttriageazureabcde },
+          }
