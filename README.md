@@ -15,6 +15,8 @@ Microsoft Sentinel analytics rules.
 | SLZ-006 | Terraform state: unexpected principal or non-Entra auth | StorageBlobLogs | T1530, T1552.001 | High |
 | SLZ-007 | Logging or alerting removed | AzureActivity | T1562.008 | High |
 | SLZ-008 | Storage account weakened (Shared Key, public blob, legacy TLS) | AzureActivity | T1562 | High |
+| SLZ-009 | Data-service or Function keys listed outside CI | AzureActivity | T1552 | Medium / High |
+| SLZ-010 | Federated credential added to or removed from a managed identity | AzureActivity | T1098.001 | Medium / High |
 
 ## Local lab
     docker compose up -d
@@ -25,7 +27,9 @@ Microsoft Sentinel analytics rules.
     docker compose down
 
 Design decisions: [docs/decisions.md](docs/decisions.md).
-Status: **done.** 8 detections, 47 fixture tests in CI, fired on real Azure logs (M4,
-[evidence](docs/evidence/m4-real-run.txt)) and as live Sentinel alerts/incidents (M5,
-[evidence](docs/evidence/m5-sentinel-incidents.txt)). Known gap: rejected Shared Key requests are
-not logged by storage (D10), covered by SLZ-003 (High on state) and SLZ-008.
+Status: **done.** 10 detections, 60 fixture tests in CI. SLZ-001 to SLZ-008 fired on real Azure
+logs (M4, [evidence](docs/evidence/m4-real-run.txt)) and as live Sentinel alerts/incidents (M5,
+[evidence](docs/evidence/m5-sentinel-incidents.txt)). SLZ-009 and SLZ-010 cover the
+[ticket-triage-agent](https://github.com/salmanamn/ticket-triage-agent) stack, which deploys through
+the same CI identities (D14). Known gap: rejected Shared Key requests are not logged by storage
+(D10), covered by SLZ-003 (High on state) and SLZ-008.
