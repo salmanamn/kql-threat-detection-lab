@@ -137,3 +137,18 @@ cases:
             Caller: attacker@contoso.example,
             Authorization_d: { scope: /x/storageAccounts/sttriageazureabcde },
           }
+
+  - name: Event Grid (first-party) fetches the host key for the notify subscription -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-14T20:40:00Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION,
+            ActivityStatusValue: Success,
+            Caller: fe96f09d-6938-4bce-a669-c59684a91e0c,
+            CallerIpAddress: 20.38.137.61,
+            Authorization_d:
+              { scope: /x/sites/func-triage-azure-abcde/host/default },
+          }
