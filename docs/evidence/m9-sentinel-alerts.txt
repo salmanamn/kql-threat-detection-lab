@@ -1,3 +1,18 @@
+== Sentinel alerts since 2026-11-14T15:30Z
 AlertName	Alerts	Severities
-SLZ-009 Data-service or Function keys listed outside CI	5	["Medium","High"]
+SLZ-003 Storage or workspace keys listed outside CI	1	["Medium"]
+SLZ-009 Data-service or Function keys listed outside CI	5	["High","Medium"]
 SLZ-010 Federated credential added to or removed from a managed identity	2	["Medium"]
+
+== Who did it (AzureActivity, successful operations)
+Who	OperationNameValue	Count
+CI (allowlisted)	MICROSOFT.EVENTGRID/TOPICS/LISTKEYS/ACTION	2
+CI (allowlisted)	MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION	1
+CI (allowlisted)	MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTKEYS/ACTION	3
+Microsoft.EventGrid (platform, allowlisted since M9)	MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION	2
+Microsoft.EventGrid (platform, allowlisted since M9)	MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTACCOUNTSAS/ACTION	1
+<upn>	MICROSOFT.WEB/SITES/HOST/LISTKEYS/ACTION	1
+<upn>	MICROSOFT.DOCUMENTDB/DATABASEACCOUNTS/LISTKEYS/ACTION	1
+<upn>	MICROSOFT.SERVICEBUS/NAMESPACES/AUTHORIZATIONRULES/LISTKEYS/ACTION	1
+<upn>	MICROSOFT.MANAGEDIDENTITY/USERASSIGNEDIDENTITIES/FEDERATEDIDENTITYCREDENTIALS/WRITE	1
+<upn>	MICROSOFT.MANAGEDIDENTITY/USERASSIGNEDIDENTITIES/FEDERATEDIDENTITYCREDENTIALS/DELETE	1
