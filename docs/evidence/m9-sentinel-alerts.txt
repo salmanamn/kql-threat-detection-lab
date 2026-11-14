@@ -1,0 +1,3 @@
+AlertName	Alerts	Severities
+SLZ-009 Data-service or Function keys listed outside CI	5	["Medium","High"]
+SLZ-010 Federated credential added to or removed from a managed identity	2	["Medium"]
