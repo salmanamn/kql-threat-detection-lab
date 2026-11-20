@@ -140,3 +140,15 @@ Role assignments to or by identities stay with SLZ-001. Not covered: an identity
 another resource (`userAssignedIdentities/assign/action`; not verified to appear as an Activity Log
 event of its own) and the federated subject in the alert (expected in the request body of the Start
 event; left out to keep the rule on the Success event alone).
+
+## D15 — AKS's first-party service principal allowlisted (arabic-voice-assistant, M8)
+Project 4 (arabic-voice-assistant) deploys an AKS cluster through the same CI identities. Its first
+real session (2026-11-20) raised SLZ-001: `AzureContainerService` (object id `24a1e91c-…`, owned by
+Microsoft's tenant `f8cdef31-…`) wrote a role assignment while the cluster was being created — AKS
+granting its own identities what the cluster needs (the five role assignments the stack asks for
+were all written by `id-slz-apply`). A benign true positive on every cluster create, so it joins
+`KnownPrincipals()` as `platform`, with a fixture case in SLZ-001 that keeps it allowlisted.
+The same session raised SLZ-010 for the gateway's federated credential (`id-voice-azure-gateway`,
+written by `id-slz-apply`): no allowlist by design (D14), so it stays an expected Medium on every
+apply and destroy of that stack — close as Benign Positive. D14's "only the hand-applied bootstrap
+root creates them" no longer holds: workload-identity stacks create one per apply.
