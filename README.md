@@ -27,9 +27,9 @@ Microsoft Sentinel analytics rules.
     docker compose down
 
 Design decisions: [docs/decisions.md](docs/decisions.md).
-Status: **done.** 10 detections, 62 fixture tests in CI. SLZ-001 to SLZ-008 fired on real Azure
+Status: **done.** 10 detections, 63 fixture tests in CI. SLZ-001 to SLZ-008 fired on real Azure
 logs (M4, [evidence](docs/evidence/m4-real-run.txt)) and as live Sentinel alerts/incidents (M5,
 [evidence](docs/evidence/m5-sentinel-incidents.txt)). SLZ-009 and SLZ-010 cover the
 [ticket-triage-agent](https://github.com/salmanamn/ticket-triage-agent) stack, which deploys through
 the same CI identities (D14). Known gap: rejected Shared Key requests are not logged by storage
-(D10), covered by SLZ-003 (High on state) and SLZ-008.
+(D10), covered by SLZ-003 (High on state) and SLZ-008. The [arabic-voice-assistant](https://github.com/salmanamn/arabic-voice-assistant) AKS stack added AKS's first-party service principal to `KnownPrincipals()` (D15).
