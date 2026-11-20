@@ -144,10 +144,14 @@ event; left out to keep the rule on the Success event alone).
 ## D15 — AKS's first-party service principal allowlisted (arabic-voice-assistant, M8)
 Project 4 (arabic-voice-assistant) deploys an AKS cluster through the same CI identities. Its first
 real session (2026-11-20) raised SLZ-001: `AzureContainerService` (object id `24a1e91c-…`, owned by
-Microsoft's tenant `f8cdef31-…`) wrote a role assignment while the cluster was being created — AKS
-granting its own identities what the cluster needs (the five role assignments the stack asks for
-were all written by `id-slz-apply`). A benign true positive on every cluster create, so it joins
-`KnownPrincipals()` as `platform`, with a fixture case in SLZ-001 that keeps it allowlisted.
+Microsoft's tenant `f8cdef31-…`) writes a role assignment in the node resource group while the
+cluster is created and deletes its role assignments there while it is deleted — AKS managing its own
+identities (the five role assignments the stack asks for were all written by `id-slz-apply`). Real
+logs of both M8 evenings: 6 such hits (2 writes, 4 deletes). Benign true positives on every cluster
+create and delete, so it joins `KnownPrincipals()` as `platform`, with a write and a delete fixture
+case in SLZ-001 that keep it allowlisted. The two SLZ-001 hits left in the same window
+(`p4-m8-real-run.txt`) are the operator's hand-applied Project 1 bootstrap change for this repo's CI
+identities (2026-11-19 15:43): expected true positives, as D14 describes for bootstrap applies.
 The same session raised SLZ-010 for the gateway's federated credential (`id-voice-azure-gateway`,
 written by `id-slz-apply`): no allowlist by design (D14), so it stays an expected Medium on every
 apply and destroy of that stack — close as Benign Positive. D14's "only the hand-applied bootstrap
