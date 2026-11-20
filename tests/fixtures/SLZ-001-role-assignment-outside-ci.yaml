@@ -97,3 +97,16 @@ cases:
             Caller: 24a1e91c-6cd7-4444-9511-9c830db22c29,
             CallerIpAddress: 20.74.0.1,
           }
+
+  - name: AKS (AzureContainerService, first-party) removes its role assignments while deleting a cluster -> no alert
+    expect: 0
+    rows:
+      AzureActivity:
+        - {
+            TimeGenerated: "2026-11-20T03:35:30Z",
+            CategoryValue: Administrative,
+            OperationNameValue: MICROSOFT.AUTHORIZATION/ROLEASSIGNMENTS/DELETE,
+            ActivityStatusValue: Success,
+            Caller: 24a1e91c-6cd7-4444-9511-9c830db22c29,
+            CallerIpAddress: 172.164.208.1,
+          }
